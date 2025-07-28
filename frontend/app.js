@@ -1,6 +1,6 @@
 // App state
 const AppState = {
-    API_BASE: ENV.API_BASE_URL,
+    API_BASE: AppState.API_BASE || 'http://localhost:8080/api',
     currentTab: 'review',
     currentOperation: 'review',
     executionHistory: [],
