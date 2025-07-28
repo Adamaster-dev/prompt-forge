@@ -1,5 +1,20 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Frontend build stage
+FROM node:18-alpine AS frontend-builder
+
+# Set working directory for frontend
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package.json frontend/package-lock.json* ./
+
+# Install frontend dependencies
+RUN npm install
+
+# Copy frontend source files
+COPY frontend/ .
+
+# Backend build stage
+FROM golang:1.21-alpine AS backend-builder
 
 # Set working directory
 WORKDIR /app
@@ -29,11 +44,11 @@ RUN apk --no-cache add ca-certificates sqlite wget
 # Create app directory
 WORKDIR /root/
 
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
+# Copy the binary from backend builder stage
+COPY --from=backend-builder /app/main .
 
-# Copy frontend files
-COPY frontend/ ./frontend/
+# Copy frontend files with dependencies from frontend builder stage
+COPY --from=frontend-builder /app/frontend/ ./frontend/
 
 # Create directory for database
 RUN mkdir -p /data
@@ -50,4 +65,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
 
 # Run the application
-CMD ["./main"] 
+CMD ["./main"]
